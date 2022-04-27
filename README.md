@@ -6,8 +6,10 @@ Eric Chuu, Debdeep Pati, and Anirban Bhattacharya. A hybrid approximation to the
 
 Link to paper: https://arxiv.org/abs/2102.12976
 
-We provide the implementation for the following:
+We provide the implementation for the following: 
+
 (1) vanilla hybrid approximation
+
 (2)  hybrid-ep approximation 
 
 ## Installation
