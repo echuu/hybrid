@@ -2,7 +2,9 @@
 title: "Hybrid Approximation Demo"
 author: "Eric Chuu"
 date: "4/26/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
