@@ -1,0 +1,153 @@
+---
+title: "Hybrid Approximation Demo"
+author: "Eric Chuu"
+date: "4/26/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Bayesian Linear Regression Demo
+
+Consider the Bayesian Linear Regression setup, where the parameters are $\left( \beta, \sigma^2 \right) \in \mathbb{R}^{p+1}$. We place a multivariate normal inverse gamma (MVN-IG) prior on $\left(  \beta, \sigma^2 \right)$, and we want to compute the marginal likelihood. This has the following form:
+$$ \int \mathcal{N} \left(y \mid X \beta, \sigma^2 I_p \right) \ 
+ \mathcal{N} \left( \beta \mid \mu_\beta, \sigma^2 V \right) \ 
+ \mathcal{IG} \left( \sigma^2 \mid a_0, b_0 \right) \ d \beta \ d \sigma^2 $$
+
+Define the following hyperparameter settings.
+
+```{r, message = FALSE, warning = FALSE}
+library(dplyr)
+set.seed(123)
+d = 20                     # dimension of (beta, sigmasq)
+n = 200                    # sample size
+J = 100                    # number of posterior samples
+p       = d - 1            # dimension of beta
+mu_beta = rep(0, p)        # prior mean for beta
+V_beta  = diag(1, p)       # prior scaled precision matrix for beta
+a_0     = 1                # prior shape for sigmasq
+b_0     = 0.5              # prior scale for sigmasq
+```
+
+
+Next, initialize the true parameters and generate the data. 
+
+```{r}
+## initalize true parameters
+sigmasq = 4
+beta    = sample(-10:10, p, replace = T)
+
+## generate data using true parameters
+X = matrix(rnorm(n * p), n, p)                # (n x p) design matrix
+eps = rnorm(n, mean = 0, sd = sqrt(sigmasq))  # (n x 1) vector of residuals
+y = X %*% beta + eps                          # (n x 1) response vector
+```
+
+
+The posterior distribution is also MVN-IG, and so we can compute the posterior parameters.
+
+```{r}
+### compute posterior parameters
+V_beta_inv = solve(V_beta)
+V_n_inv = t(X) %*% X + V_beta_inv
+
+V_n  = solve(V_n_inv)                                # (p x p)
+mu_n = V_n %*% (t(X) %*% y + V_beta_inv %*% mu_beta) # (p x 1)
+a_n =  a_0 + n / 2
+b_n =  c(b_0 + 0.5 * (t(y) %*% y +
+                        t(mu_beta) %*% V_beta_inv %*% mu_beta -
+                        t(mu_n) %*% V_n_inv %*% mu_n))
+
+# store prior, posterior parameters
+params = list(V_beta = V_beta, V_beta_inv = V_beta_inv, mu_beta = mu_beta,
+              a_0 = a_0, b_0 = b_0,
+              V_n = V_n, V_n_inv = V_n_inv, mu_n = mu_n,
+              a_n = a_n, b_n = b_n,
+              y = y, X = X, n = n, d = d, p = p)
+```
+
+
+## True value of marginal likelihood
+
+The true marginal likelihood is available in closed form and can be computed as follows.
+
+```{r}
+# calculate true marginal likelihood
+logML = function(params) {
+  with(params,
+       a_0 * log(b_0) + lgamma(a_n) + 0.5 * hybrid::log_det(V_n) -
+         0.5 * hybrid::log_det(V_beta) - n / 2 * log(2 * pi) - lgamma(a_0) -
+         a_n * log(b_n))
+} # end of logML() function
+logML(params)
+```
+
+
+## Hybrid Estimator
+
+In order to use the Hybrid estimator, we first need to be able to sample from the posterior distribution. We define the following sampling function. 
+
+```{r}
+# sample_beta(): sample from [ beta | sigmasq, y ]
+sample_beta = function(sigmasq, params) {
+  mvtnorm::rmvnorm(1, mean = params$mu_n, sigma = sigmasq * params$V_n)
+}
+
+# sample_post(): sample from [ beta, sigmasq | y ]
+# draw J samples from the posterior distribution
+sample_post = function(J, params) {
+  sigmasq_post = with(params, MCMCpack::rinvgamma(J, shape = a_n, scale = b_n))
+  beta_post = t(sapply(sigmasq_post, sample_beta, params = params))
+  data.frame(beta_post, sigmasq_post)
+}
+```
+
+Then, we can draw samples from the posterior distributiont, where each posterior sample is stored row-wise, where the first $p$ elements correspond to $\beta$, and the $(p+1)$-th element corresponds to $\sigma^2$. 
+
+```{r}
+sample_post(5, params)
+```
+
+We also need to evaluate the negative log posterior. For the hybrid-ep estimator, we also need the gradient and hessian of the negative log posterior as well. We supply all of these below. 
+
+
+```{r}
+# psi(): negative log posterior
+psi = function(u, params) {
+  p = params$p
+  # extract beta, sigmasq from posterior sample
+  beta    = unname(unlist(u[1:p])) # (p x 1)
+  sigmasq = unname(unlist(u[p+1])) # (1 x 1)
+
+  # compute log posterior
+  logpost = with(params,
+                 sum(dnorm(y, X %*% beta, sqrt(sigmasq), log = T)) +
+                   mvtnorm::dmvnorm(beta, mu_beta, sigmasq * V_beta, log = T) +
+                   log(MCMCpack::dinvgamma(sigmasq, shape = a_0, scale = b_0)))
+  return(-logpost)
+} # end of psi() function
+
+# For hybrid-ep estimator -- define gradient, hessian functions
+grad = function(u, params) { pracma::grad(psi, x0 = u, params = params) }
+hess = function(u, params) { pracma::hessian(psi, x0 = u, params = params) }
+```
+
+
+Now, we can proceed to compute both the vanilla hybrid estimator and the hybrid-ep estimator. 
+
+```{r}
+# sample from posterior
+samps = sample_post(J, params)
+# evaluate the negative log posterior
+u_df = hybrid::preprocess(samps, d, params)
+
+# compute vanilla hybrid estimator
+hybrid::hybml_const(u_df)$logz
+
+# compute hybrid-ep estimator
+hybrid::hybml(u_df, params, psi, grad, hess)$logz
+```
+
+
