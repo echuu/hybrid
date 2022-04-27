@@ -1,4 +1,4 @@
-# hybrid: Hybrid Approximation Algorithm for Mmarginal Likelihood Estimation
+# hybrid: Hybrid Approximation Algorithm for Marginal Likelihood Estimation
 
 `hybrid` is an R package computing the marginal likelihood based on the hybrid approximation methodology (Chuu et. al., 2021).
 
