@@ -16,6 +16,14 @@ We provide the implementation for the following:
 
 Currently, this package is available to be built locally in R. 
 
+To build this package on the command line, run the following commands after cloning this repository:
+
+`R CMD build hybrid`
+
+`R CMD INSTALL hybrid_1.0.tar.gz`
+
+----
+
 ## Using the package in practice
 
 See [this demo](https://github.com/echuu/hybrid/blob/main/examples/demo/demo.pdf) for an illustration of how to use this package in practice. The source code for this example can be found [here](https://github.com/echuu/hybrid/blob/main/examples/demo/demo.Rmd).
