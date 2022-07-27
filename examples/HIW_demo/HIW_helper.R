@@ -1,5 +1,11 @@
 
 ## HIW_helper.R
+## author: Eric Chuu
+
+## This file contains functions related to the hyper-inverse Wishart density.
+## Sampling functions and density evaluations are used in the EPSOM-Hyb 
+## algorithm, and other functions below help in the intermediate calculations.
+
 
 ## sampleHIW() function
 #  J       : number of posterior samples to generate

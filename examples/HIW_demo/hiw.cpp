@@ -1,3 +1,14 @@
+
+/* 
+	hiw.cpp
+	author: Eric Chuu
+
+	This file implements the HIW density functions in C++ for optimal runtime. 
+	The EPSOM-Hyb algorithm calls on these functions internally to produce
+	the final estiamte.
+*/ 
+
+
 #include <RcppArmadillo.h>
 #include <cmath>
 

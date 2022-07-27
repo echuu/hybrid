@@ -1,4 +1,13 @@
 
+## HIW_simulations.R
+## author: Eric Chuu
+
+## This file compares the performance of the GNORM and EPSOM-Hyb estimators.
+## for high-dimensional graphs that are constructed using G_9, as described
+## in Section 4.1 of the paper. Since G_9 is decomposable, the resulting
+## true normalizing constant is available in closed form, so we evaluate 
+## the estimates against the ground truth. 
+
 
 # load dplyr for easier data manipulation
 library(dplyr)
