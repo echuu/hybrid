@@ -1,11 +1,11 @@
 Package: hybrid
 Type: Package
-Title: What the package does (short line)
+Title: Hybrid approximation to the marginal likelihood
 Version: 1.0
 Date: 2022-03-04
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Author: Eric Chuu
+Maintainer: Eric Chuu <ericchuu@tamu.edu>
+Description: Compute the vanilla hybrid and hybrid-ep approximations to the marginal likelihood.
 License: What license is it under?
 Imports: Rcpp (>= 1.0.7)
 LinkingTo: Rcpp, RcppArmadillo
